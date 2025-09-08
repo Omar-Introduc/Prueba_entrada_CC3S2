@@ -1,0 +1,7 @@
+* 19c2071 feat: implementacion
+* 0fada22 doc: actualizacion
+* 43d6fbd fix:Corrige error en el mensaje
+| * 05e6fea fix:Corrige error en el mensaje
+|/  
+* a4570e4 Rama2: Nuevo mensaje
+* ac0bd89 Commit Inicial
