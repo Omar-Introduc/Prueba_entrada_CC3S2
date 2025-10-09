@@ -4,8 +4,8 @@ import java.util.List;
 
 public class ServidorFibonacci {
 
-    private TCPServer mainServer; // Listens for ServidorPrincipal
-    private TCPServer workerServer; // Listens for WorkerFibonacci
+    private TCPServer mainServer;
+    private TCPServer workerServer;
     private final List<TCPServerThread> workers = Collections.synchronizedList(new ArrayList<>());
     private int nextWorker = 0;
 
@@ -15,7 +15,6 @@ public class ServidorFibonacci {
     }
 
     void iniciar() {
-        // Thread for the main server (port 4444) to listen for the main client
         new Thread(() -> {
             mainServer = new TCPServer(
                 message -> {
@@ -29,7 +28,6 @@ public class ServidorFibonacci {
             mainServer.run();
         }).start();
 
-        // Thread for the worker server (port 4445) to listen for workers
         new Thread(() -> {
             workerServer = new TCPServer(
                 message -> {
@@ -38,7 +36,6 @@ public class ServidorFibonacci {
                 4445
             );
 
-            // Use the new connection hook to add workers to our list
             workerServer.setOnConnectionReceivedListener(clientThread -> {
                 System.out.println("Nuevo worker conectado y anadido a la lista.");
                 workers.add(clientThread);
@@ -57,7 +54,6 @@ public class ServidorFibonacci {
                 return;
             }
 
-            // Simple round-robin to select a worker
             TCPServerThread worker = workers.get(nextWorker);
             System.out.println("Asignando tarea '" + task + "' al worker " + nextWorker);
             worker.sendMessage(task);
