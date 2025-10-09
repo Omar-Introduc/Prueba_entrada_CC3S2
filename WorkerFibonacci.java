@@ -13,7 +13,6 @@ class WorkerFibonacci {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                // Connect to ServidorFibonacci on port 4445
                 mTcpClient = new TCPClient("localhost", 4445, new TCPClient.OnMessageReceived() {
                     @Override
                     public void messageReceived(String message) {
@@ -47,11 +46,6 @@ class WorkerFibonacci {
         }
     }
 
-    /**
-     * Calculates the nth Fibonacci number using an iterative approach.
-     * @param n The position in the Fibonacci sequence.
-     * @return The Fibonacci number at position n.
-     */
     long fibonacci(int n) {
         if (n <= 1) {
             return n;
