@@ -1,29 +1,29 @@
 # Use an official Python runtime as a parent image
 FROM python:3.9-slim
 
-# Set the working directory in the container
-WORKDIR /app
-
 # Create a non-root user and group
 RUN addgroup --system app && adduser --system --group app
 
+# Install system dependencies for OpenCV
+RUN apt-get update && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 && rm -rf /var/lib/apt/lists/*
+
+# Set the working directory in the container
+WORKDIR /app
+
 # Set DEEPFACE_HOME environment variable
+# Deepface will try to create /app/.deepface/weights
 ENV DEEPFACE_HOME=/app
 
-# Create a directory for deepface models and set permissions
-RUN mkdir -p /app/.deepface && chown -R app:app /app/
-
-# Install system dependencies for OpenCV
-RUN apt-get update && apt-get install -y libgl1 libglib2.0-0
-
-# Copy the requirements file into the container at /app
-COPY --chown=app:app requirements.txt .
-
-# Install any needed packages specified in requirements.txt
+# Copy requirements and install dependencies
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application's code into the container at /app
-COPY --chown=app:app . .
+# Copy the rest of the application code
+COPY . .
+
+# Change ownership of the app directory to the app user
+# This is done AFTER all files are copied and dependencies installed
+RUN chown -R app:app /app
 
 # Switch to the non-root user
 USER app
