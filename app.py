@@ -1,48 +1,78 @@
-import cv2
-from deepface import DeepFace
 from flask import Flask, request, jsonify
-import numpy as np
-import os
 
 app = Flask(__name__)
 
-# Load face cascade classifier
-face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+# Simulated in-memory database
+libros = [
+    {
+        "id": 1,
+        "titulo": "Cien años de soledad",
+        "autor": "Gabriel García Márquez",
+        "año_publicacion": 1967,
+        "genero": "Realismo Mágico"
+    },
+    {
+        "id": 2,
+        "titulo": "1984",
+        "autor": "George Orwell",
+        "año_publicacion": 1949,
+        "genero": "Distopía"
+    }
+]
+siguiente_id = 3
 
-@app.route('/emotion', methods=['POST'])
-def emotion_detection():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part in the request'}), 400
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-    if file:
-        # Read image file
-        filestr = file.read()
-        npimg = np.frombuffer(filestr, np.uint8)
-        frame = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
+# Get all books
+@app.route('/libros', methods=['GET'])
+def get_libros():
+    return jsonify(libros)
 
-        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        # Convert grayscale frame to RGB format
-        rgb_frame = cv2.cvtColor(gray_frame, cv2.COLOR_GRAY2RGB)
-        # Detect faces in the frame
-        faces = face_cascade.detectMultiScale(gray_frame, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+# Get a specific book
+@app.route('/libros/<int:libro_id>', methods=['GET'])
+def get_libro(libro_id):
+    libro = next((libro for libro in libros if libro['id'] == libro_id), None)
+    if libro:
+        return jsonify(libro)
+    return jsonify({"mensaje": "Libro no encontrado"}), 404
 
-        if len(faces) == 0:
-            return jsonify({'emotion': 'No face detected'})
+# Add a new book
+@app.route('/libros', methods=['POST'])
+def add_libro():
+    global siguiente_id
+    nuevo_libro = {
+        'id': siguiente_id,
+        'titulo': request.json['titulo'],
+        'autor': request.json['autor'],
+        'año_publicacion': request.json['año_publicacion'],
+        'genero': request.json['genero']
+    }
+    libros.append(nuevo_libro)
+    siguiente_id += 1
+    return jsonify(nuevo_libro), 201
 
-        emocion = "Sin Emocion"
-        for (x, y, w, h) in faces:
-            face_roi = rgb_frame[y:y + h, x:x + w]
-            # Perform emotion analysis on the face ROI
-            try:
-                result = DeepFace.analyze(face_roi, actions=['emotion'], enforce_detection=False)
-                # Determine the dominant emotion
-                emocion = result[0]['dominant_emotion']
-            except Exception as e:
-                return jsonify({'error': str(e)}), 500
+# Update a book
+@app.route('/libros/<int:libro_id>', methods=['PUT'])
+def update_libro(libro_id):
+    libro = next((libro for libro in libros if libro['id'] == libro_id), None)
+    if not libro:
+        return jsonify({"mensaje": "Libro no encontrado"}), 404
 
-        return jsonify({'emotion': emocion})
+    libro['titulo'] = request.json.get('titulo', libro['titulo'])
+    libro['autor'] = request.json.get('autor', libro['autor'])
+    libro['año_publicacion'] = request.json.get('año_publicacion', libro['año_publicacion'])
+    libro['genero'] = request.json.get('genero', libro['genero'])
+
+    return jsonify(libro)
+
+# Delete a book
+@app.route('/libros/<int:libro_id>', methods=['DELETE'])
+def delete_libro(libro_id):
+    global libros
+    libro = next((libro for libro in libros if libro['id'] == libro_id), None)
+    if not libro:
+        return jsonify({"mensaje": "Libro no encontrado"}), 404
+
+    libros = [libro for libro in libros if libro['id'] != libro_id]
+    return '', 204
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 7860)))
+    app.run(debug=True)
